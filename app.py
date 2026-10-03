@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager
 from models import db
 from auth import auth_bp
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from chamados import chamados_bp
 
 load_dotenv()
 
@@ -12,9 +13,11 @@ app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///helpdesk.db"
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 
+
 db.init_app(app)
 jwt = JWTManager(app)
 app.register_blueprint(auth_bp)
+app.register_blueprint(chamados_bp)
 
 
 with app.app_context():
