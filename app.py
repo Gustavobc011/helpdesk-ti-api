@@ -10,7 +10,7 @@ from chamados import chamados_bp
 load_dotenv()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///helpdesk.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///helpdesk.db")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 
 
