@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Chamado, Usuario
+from models import db, Chamado, Usuario, Comentario
 
 chamados_bp = Blueprint("chamados", __name__)
 
@@ -102,3 +102,64 @@ def atualizar_status(chamado_id):
     db.session.commit()
 
     return jsonify({"mensagem": "Status atualizado com sucesso", "status": chamado.status}), 200
+
+
+def usuario_pode_acessar_chamado(usuario, chamado):
+    """Retorna True se o usuario for tecnico/admin ou o dono do chamado."""
+    eh_equipe = usuario.papel in ["tecnico", "admin"]
+    eh_dono = chamado.usuario_id == usuario.id
+    return eh_equipe or eh_dono
+
+
+@chamados_bp.route("/chamados/<int:chamado_id>/comentarios", methods=["POST"])
+@jwt_required()
+def adicionar_comentario(chamado_id):
+    """Adiciona um comentario a um chamado (dono do chamado ou tecnico/admin)."""
+    usuario = Usuario.query.get(get_jwt_identity())
+    chamado = Chamado.query.get(chamado_id)
+
+    if not chamado:
+        return jsonify({"erro": "Chamado nao encontrado"}), 404
+
+    if not usuario_pode_acessar_chamado(usuario, chamado):
+        return jsonify({"erro": "Voce nao tem acesso a este chamado"}), 403
+
+    dados = request.get_json()
+
+    novo_comentario = Comentario(
+        texto=dados["texto"],
+        chamado_id=chamado.id,
+        usuario_id=usuario.id
+    )
+
+    db.session.add(novo_comentario)
+    db.session.commit()
+
+    return jsonify({"mensagem": "Comentario adicionado com sucesso", "id": novo_comentario.id}), 201
+
+
+@chamados_bp.route("/chamados/<int:chamado_id>/comentarios", methods=["GET"])
+@jwt_required()
+def listar_comentarios(chamado_id):
+    """Lista os comentarios de um chamado, do mais antigo ao mais recente."""
+    usuario = Usuario.query.get(get_jwt_identity())
+    chamado = Chamado.query.get(chamado_id)
+
+    if not chamado:
+        return jsonify({"erro": "Chamado nao encontrado"}), 404
+
+    if not usuario_pode_acessar_chamado(usuario, chamado):
+        return jsonify({"erro": "Voce nao tem acesso a este chamado"}), 403
+
+    comentarios = Comentario.query.filter_by(chamado_id=chamado.id).order_by(Comentario.data_criacao).all()
+
+    resultado = []
+    for comentario in comentarios:
+        resultado.append({
+            "id": comentario.id,
+            "texto": comentario.texto,
+            "usuario_id": comentario.usuario_id,
+            "data_criacao": comentario.data_criacao.isoformat()
+        })
+
+    return jsonify(resultado), 200

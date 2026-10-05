@@ -19,3 +19,11 @@ class Chamado(db.Model):
     status = db.Column(db.String(20), nullable=False, default="aberto")
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
     tecnico_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=True)
+
+
+class Comentario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    texto = db.Column(db.Text, nullable=False)
+    data_criacao = db.Column(db.DateTime, server_default=db.func.now())
+    chamado_id = db.Column(db.Integer, db.ForeignKey("chamado.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuario.id"), nullable=False)
