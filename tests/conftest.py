@@ -3,7 +3,7 @@ import os
 # Estas variaveis precisam ser definidas ANTES de importar o app,
 # para ele usar o banco de teste e nao o banco real
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-os.environ["JWT_SECRET_KEY"] = "chave-de-teste"
+os.environ["JWT_SECRET_KEY"] = "chave-de-teste-com-mais-de-32-caracteres-ok"
 
 import pytest
 from app import app as flask_app
