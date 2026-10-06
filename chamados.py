@@ -52,7 +52,7 @@ def listar_meus_chamados():
 def listar_todos_chamados():
     """Lista todos os chamados do sistema. Acesso restrito a tecnico/admin."""
     usuario_id = get_jwt_identity()
-    usuario = Usuario.query.get(usuario_id)
+    usuario = db.session.get(Usuario, usuario_id)
 
     # Checagem de autorizacao: so passa quem tem papel de tecnico ou admin
     if usuario.papel not in ["tecnico", "admin"]:
@@ -80,12 +80,12 @@ def listar_todos_chamados():
 def atualizar_status(chamado_id):
     """Atualiza o status de um chamado. Acesso restrito a tecnico/admin."""
     usuario_id = get_jwt_identity()
-    usuario = Usuario.query.get(usuario_id)
+    usuario = db.session.get(Usuario, usuario_id)
 
     if usuario.papel not in ["tecnico", "admin"]:
         return jsonify({"erro": "Acesso restrito a tecnicos e administradores"}), 403
 
-    chamado = Chamado.query.get(chamado_id)
+    chamado = db.session.get(Chamado, chamado_id)
 
     if not chamado:
         return jsonify({"erro": "Chamado nao encontrado"}), 404
@@ -115,8 +115,8 @@ def usuario_pode_acessar_chamado(usuario, chamado):
 @jwt_required()
 def adicionar_comentario(chamado_id):
     """Adiciona um comentario a um chamado (dono do chamado ou tecnico/admin)."""
-    usuario = Usuario.query.get(get_jwt_identity())
-    chamado = Chamado.query.get(chamado_id)
+    usuario = db.session.get(Usuario, get_jwt_identity())
+    chamado = db.session.get(Chamado, chamado_id)
 
     if not chamado:
         return jsonify({"erro": "Chamado nao encontrado"}), 404
@@ -128,6 +128,7 @@ def adicionar_comentario(chamado_id):
 
     novo_comentario = Comentario(
         texto=dados["texto"],
+        
         chamado_id=chamado.id,
         usuario_id=usuario.id
     )
@@ -143,7 +144,7 @@ def adicionar_comentario(chamado_id):
 def listar_comentarios(chamado_id):
     """Lista os comentarios de um chamado, do mais antigo ao mais recente."""
     usuario = Usuario.query.get(get_jwt_identity())
-    chamado = Chamado.query.get(chamado_id)
+    chamado = db.session.get(Chamado, chamado_id)
 
     if not chamado:
         return jsonify({"erro": "Chamado nao encontrado"}), 404
