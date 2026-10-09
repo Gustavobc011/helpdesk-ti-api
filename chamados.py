@@ -143,7 +143,7 @@ def adicionar_comentario(chamado_id):
 @jwt_required()
 def listar_comentarios(chamado_id):
     """Lista os comentarios de um chamado, do mais antigo ao mais recente."""
-    usuario = Usuario.query.get(get_jwt_identity())
+    usuario = db.session.get(Usuario, get_jwt_identity())
     chamado = db.session.get(Chamado, chamado_id)
 
     if not chamado:
@@ -152,7 +152,7 @@ def listar_comentarios(chamado_id):
     if not usuario_pode_acessar_chamado(usuario, chamado):
         return jsonify({"erro": "Voce nao tem acesso a este chamado"}), 403
 
-    comentarios = Comentario.query.filter_by(chamado_id=chamado.id).order_by(Comentario.data_criacao).all()
+    comentarios = Comentario.query.filter_by(chamado_id=chamado.id).order_by(Comentario.data_criacao, Comentario.id).all()
 
     resultado = []
     for comentario in comentarios:
