@@ -6,6 +6,7 @@ from models import db
 from auth import auth_bp
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from chamados import chamados_bp
+from flasgger import Swagger
 
 load_dotenv()
 
@@ -16,6 +17,22 @@ app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 
 db.init_app(app)
 jwt = JWTManager(app)
+swagger_template = {
+    "info": {
+        "title": "API Helpdesk de TI",
+        "description": "API REST para abertura e acompanhamento de chamados de suporte.",
+        "version": "1.0.0"
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Cole o token no formato: Bearer SEU_TOKEN"
+        }
+    }
+}
+swagger = Swagger(app, template=swagger_template)
 app.register_blueprint(auth_bp)
 app.register_blueprint(chamados_bp)
 

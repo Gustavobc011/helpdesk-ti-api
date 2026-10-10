@@ -7,6 +7,40 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/registro", methods=["POST"])
 def registro():
+    """Cadastra um novo usuario.
+    ---
+    tags:
+      - Autenticacao
+    parameters:
+      - in: body
+        name: corpo
+        required: true
+        schema:
+          type: object
+          required:
+            - nome
+            - email
+            - senha
+          properties:
+            nome:
+              type: string
+              example: Maria Silva
+            email:
+              type: string
+              example: maria@empresa.com
+            senha:
+              type: string
+              example: "123456"
+            papel:
+              type: string
+              description: Opcional. Use "tecnico" para criar um tecnico. Padrao "usuario".
+              example: usuario
+    responses:
+      201:
+        description: Usuario cadastrado com sucesso
+      409:
+        description: Email ja cadastrado
+    """
     dados = request.get_json()
 
     usuario_existente = Usuario.query.filter_by(email=dados["email"]).first()
@@ -30,6 +64,32 @@ def registro():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    """Autentica o usuario e devolve o token de acesso.
+    ---
+    tags:
+      - Autenticacao
+    parameters:
+      - in: body
+        name: corpo
+        required: true
+        schema:
+          type: object
+          required:
+            - email
+            - senha
+          properties:
+            email:
+              type: string
+              example: maria@empresa.com
+            senha:
+              type: string
+              example: "123456"
+    responses:
+      200:
+        description: Login realizado, devolve access_token e papel
+      401:
+        description: Email ou senha invalidos
+    """
     dados = request.get_json()
 
     usuario = Usuario.query.filter_by(email=dados["email"]).first()
