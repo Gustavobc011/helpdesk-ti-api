@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Chamado, Usuario, Comentario
+from sqlalchemy import func
 
 chamados_bp = Blueprint("chamados", __name__)
 
@@ -315,3 +316,37 @@ def listar_comentarios(chamado_id):
         })
 
     return jsonify(resultado), 200
+
+@chamados_bp.route("/metricas", methods=["GET"])
+@jwt_required()
+def metricas():
+    """Resumo dos chamados por status, prioridade e categoria (somente tecnico ou admin).
+    ---
+    tags:
+      - Metricas
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: Totais agrupados dos chamados
+      401:
+        description: Token ausente ou invalido
+      403:
+        description: Acesso restrito a tecnicos e administradores
+    """
+    usuario = db.session.get(Usuario, get_jwt_identity())
+
+    if usuario.papel not in ["tecnico", "admin"]:
+        return jsonify({"erro": "Acesso restrito a tecnicos e administradores"}), 403
+
+    def contar_por(coluna):
+        """Conta quantos chamados existem para cada valor da coluna."""
+        linhas = db.session.query(coluna, func.count(Chamado.id)).group_by(coluna).all()
+        return {valor: quantidade for valor, quantidade in linhas}
+
+    return jsonify({
+        "total": Chamado.query.count(),
+        "por_status": contar_por(Chamado.status),
+        "por_prioridade": contar_por(Chamado.prioridade),
+        "por_categoria": contar_por(Chamado.categoria)
+    }), 200
