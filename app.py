@@ -11,7 +11,14 @@ from flasgger import Swagger
 load_dotenv()
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///helpdesk.db")
+
+database_url = os.environ.get("DATABASE_URL", "sqlite:///helpdesk.db")
+
+# Algumas hospedagens usam "postgres://", mas o SQLAlchemy exige "postgresql://"
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
 
 
