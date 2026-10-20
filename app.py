@@ -14,9 +14,12 @@ app = Flask(__name__)
 
 database_url = os.environ.get("DATABASE_URL", "sqlite:///helpdesk.db")
 
-# Algumas hospedagens usam "postgres://", mas o SQLAlchemy exige "postgresql://"
+# O SQLAlchemy 2 usa o driver "psycopg" (v3) por padrão, mas instalamos o
+# "psycopg2". Por isso indicamos o driver no endereço: "postgresql+psycopg2://"
 if database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
+    database_url = database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
