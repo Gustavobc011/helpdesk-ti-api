@@ -3,9 +3,18 @@
 API REST para um sistema de chamados de suporte de TI, com autenticação JWT
 e dois perfis de acesso: usuário e técnico/admin.
 
+## Demo online
+
+- Documentação interativa (Swagger): https://helpdesk-ti-api.onrender.com/apidocs
+
+> A API roda no plano gratuito do Render: se ficar parada, o primeiro acesso
+> pode levar cerca de 1 minuto para "acordar".
+> Para testar: registre um usuário em `/registro`, faça login em `/login`
+> e clique em **Authorize** informando `Bearer <token>`.
+
 ## Tecnologias
 
-Python, Flask, SQLAlchemy, Flask-JWT-Extended, Flasgger (Swagger), pytest, Docker, gunicorn
+Python, Flask, SQLAlchemy, Flask-JWT-Extended, Flasgger (Swagger), pytest, Docker, gunicorn, PostgreSQL, Render
 
 ## Funcionalidades
 
