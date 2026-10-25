@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 from models import db, Usuario
+from validacoes import ler_json, validar_texto, validar_email, validar_senha, resposta_de_erro
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -34,12 +35,29 @@ def registro():
     responses:
       201:
         description: Usuario cadastrado com sucesso (sempre com papel "usuario")
+      400:
+        description: Dados invalidos (campo faltando, e-mail invalido ou senha curta)
       409:
         description: Email ja cadastrado
     """
-    dados = request.get_json()
+    dados = ler_json()
 
-    usuario_existente = Usuario.query.filter_by(email=dados["email"]).first()
+    # Valida tudo de uma vez, para o cliente ver todos os problemas juntos.
+    # Os tamanhos maximos sao os mesmos das colunas em models.py.
+    erro = resposta_de_erro(
+        validar_texto(dados, "nome", maximo=100),
+        validar_email(dados),
+        validar_senha(dados),
+    )
+    if erro:
+        return erro
+
+    # Padroniza o e-mail (sem espacos e minusculo) para "Maria@x.com" e
+    # "maria@x.com" serem tratados como o mesmo e-mail
+    nome = dados["nome"].strip()
+    email = dados["email"].strip().lower()
+
+    usuario_existente = Usuario.query.filter_by(email=email).first()
     if usuario_existente:
         return jsonify({"erro": "Email ja cadastrado"}), 409
 
@@ -50,8 +68,8 @@ def registro():
     # permissoes de tecnico. O registro publico sempre cria um "usuario" comum;
     # tecnicos sao cadastrados pelo script criar_tecnico.py, fora da API.
     novo_usuario = Usuario(
-        nome=dados["nome"],
-        email=dados["email"],
+        nome=nome,
+        email=email,
         senha_hash=senha_hash,
         papel="usuario"
     )
@@ -87,12 +105,24 @@ def login():
     responses:
       200:
         description: Login realizado, devolve access_token e papel
+      400:
+        description: Email ou senha nao enviados
       401:
         description: Email ou senha invalidos
     """
-    dados = request.get_json()
+    dados = ler_json()
 
-    usuario = Usuario.query.filter_by(email=dados["email"]).first()
+    # No login so checamos se os campos vieram. Regras de formato/tamanho
+    # ficam no cadastro; aqui um dado errado simplesmente nao vai bater (401).
+    erro = resposta_de_erro(
+        validar_texto(dados, "email"),
+        validar_texto(dados, "senha"),
+    )
+    if erro:
+        return erro
+
+    email = dados["email"].strip().lower()
+    usuario = Usuario.query.filter_by(email=email).first()
 
     if not usuario or not check_password_hash(usuario.senha_hash, dados["senha"]):
         return jsonify({"erro": "Email ou senha invalidos"}), 401

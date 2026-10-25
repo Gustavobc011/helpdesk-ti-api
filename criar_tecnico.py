@@ -15,8 +15,8 @@ from werkzeug.security import generate_password_hash
 
 from app import app
 from models import db, Usuario
-
-TAMANHO_MINIMO_SENHA = 6
+# Mesmas regras da API, para o script nao aceitar o que o /registro recusaria
+from validacoes import TAMANHO_MINIMO_SENHA, email_valido
 
 
 def criar_tecnico(nome, email, senha):
@@ -58,6 +58,9 @@ def main():
 
     if not nome or not email:
         print("Erro: nome e email sao obrigatorios.")
+        return
+    if not email_valido(email):
+        print("Erro: email invalido.")
         return
     if senha != confirmacao:
         print("Erro: as senhas nao conferem.")
