@@ -1,9 +1,14 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Chamado, Usuario, Comentario
 from sqlalchemy import func
+from validacoes import ler_json, validar_texto, validar_opcao, resposta_de_erro
 
 chamados_bp = Blueprint("chamados", __name__)
+
+# Valores aceitos, num lugar so, para nao repetir nas rotas
+PRIORIDADES_VALIDAS = ["baixa", "media", "alta", "critica"]
+STATUS_VALIDOS = ["aberto", "em andamento", "resolvido"]
 
 
 @chamados_bp.route("/chamados", methods=["POST"])
@@ -38,21 +43,37 @@ def criar_chamado():
             prioridade:
               type: string
               description: Opcional. Padrao "media".
+              enum:
+                - baixa
+                - media
+                - alta
+                - critica
               example: media
     responses:
       201:
         description: Chamado criado com sucesso
+      400:
+        description: Dados invalidos
       401:
         description: Token ausente ou invalido
     """
-        
     usuario_id = get_jwt_identity()
-    dados = request.get_json()
+    dados = ler_json()
+
+    # Tamanhos maximos iguais aos das colunas em models.py
+    erro = resposta_de_erro(
+        validar_texto(dados, "titulo", maximo=150),
+        validar_texto(dados, "descricao"),
+        validar_texto(dados, "categoria", maximo=50),
+        validar_opcao(dados, "prioridade", PRIORIDADES_VALIDAS),
+    )
+    if erro:
+        return erro
 
     novo_chamado = Chamado(
-        titulo=dados["titulo"],
-        descricao=dados["descricao"],
-        categoria=dados["categoria"],
+        titulo=dados["titulo"].strip(),
+        descricao=dados["descricao"].strip(),
+        categoria=dados["categoria"].strip(),
         prioridade=dados.get("prioridade", "media"),
         usuario_id=usuario_id
     )
@@ -189,12 +210,13 @@ def atualizar_status(chamado_id):
     if not chamado:
         return jsonify({"erro": "Chamado nao encontrado"}), 404
 
-    dados = request.get_json()
+    # ler_json() garante um dicionario: sem corpo, .get() devolve None
+    # e cai no "Status invalido" em vez de quebrar com erro 500
+    dados = ler_json()
     novo_status = dados.get("status")
 
-    status_validos = ["aberto", "em andamento", "resolvido"]
-    if novo_status not in status_validos:
-        return jsonify({"erro": f"Status invalido. Use um de: {status_validos}"}), 400
+    if novo_status not in STATUS_VALIDOS:
+        return jsonify({"erro": f"Status invalido. Use um de: {STATUS_VALIDOS}"}), 400
 
     chamado.status = novo_status
     chamado.tecnico_id = usuario_id
@@ -239,6 +261,8 @@ def adicionar_comentario(chamado_id):
     responses:
       201:
         description: Comentario adicionado com sucesso
+      400:
+        description: Texto do comentario nao enviado
       401:
         description: Token ausente ou invalido
       403:
@@ -255,11 +279,14 @@ def adicionar_comentario(chamado_id):
     if not usuario_pode_acessar_chamado(usuario, chamado):
         return jsonify({"erro": "Voce nao tem acesso a este chamado"}), 403
 
-    dados = request.get_json()
+    dados = ler_json()
+
+    erro = resposta_de_erro(validar_texto(dados, "texto"))
+    if erro:
+        return erro
 
     novo_comentario = Comentario(
-        texto=dados["texto"],
-        
+        texto=dados["texto"].strip(),
         chamado_id=chamado.id,
         usuario_id=usuario.id
     )
