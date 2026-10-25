@@ -35,6 +35,24 @@ def test_login_com_sucesso(client):
     assert resposta.get_json()["papel"] == "usuario"
 
 
+def test_registro_ignora_papel_enviado(client):
+    """Seguranca: mandar "papel": "tecnico" no /registro NAO pode criar um tecnico.
+
+    Simula um ataque: alguem tenta se cadastrar ja como tecnico.
+    O cadastro deve funcionar, mas o papel salvo tem que ser "usuario".
+    """
+    tentativa = {**DADOS_USUARIO, "papel": "tecnico"}
+    resposta = client.post("/registro", json=tentativa)
+    assert resposta.status_code == 201
+
+    # O login devolve o papel que ficou gravado no banco
+    login = client.post("/login", json={
+        "email": DADOS_USUARIO["email"],
+        "senha": DADOS_USUARIO["senha"]
+    })
+    assert login.get_json()["papel"] == "usuario"
+
+
 def test_login_com_senha_errada(client):
     """Login com senha incorreta deve devolver 401 (nao autorizado)."""
     client.post("/registro", json=DADOS_USUARIO)

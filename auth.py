@@ -31,13 +31,9 @@ def registro():
             senha:
               type: string
               example: "123456"
-            papel:
-              type: string
-              description: Opcional. Use "tecnico" para criar um tecnico. Padrao "usuario".
-              example: usuario
     responses:
       201:
-        description: Usuario cadastrado com sucesso
+        description: Usuario cadastrado com sucesso (sempre com papel "usuario")
       409:
         description: Email ja cadastrado
     """
@@ -49,11 +45,15 @@ def registro():
 
     senha_hash = generate_password_hash(dados["senha"])
 
+    # SEGURANCA: o papel NUNCA vem do corpo da requisicao.
+    # Se viesse, qualquer pessoa poderia mandar {"papel": "tecnico"} e ganhar
+    # permissoes de tecnico. O registro publico sempre cria um "usuario" comum;
+    # tecnicos sao cadastrados pelo script criar_tecnico.py, fora da API.
     novo_usuario = Usuario(
         nome=dados["nome"],
         email=dados["email"],
         senha_hash=senha_hash,
-        papel=dados.get("papel", "usuario")
+        papel="usuario"
     )
 
     db.session.add(novo_usuario)
